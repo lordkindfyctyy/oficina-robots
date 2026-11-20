@@ -15,17 +15,29 @@ header h1{font-size:1.05rem;margin:0;margin-right:auto}
 button,input{font:inherit;border-radius:8px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);padding:7px 12px}
 button{cursor:pointer;background:#25422f;border-color:#2f5a3d}
 button.s{background:var(--bg)}
-.wrap{display:grid;grid-template-columns:1fr 320px;gap:0;min-height:calc(100vh - 58px)}
+.wrap{display:grid;grid-template-columns:1fr 400px;gap:0;min-height:calc(100vh - 58px)}
 #lienzo{width:100%;display:block;touch-action:manipulation}
 .cv{padding:8px;min-width:0}
-aside{border-left:1px solid var(--bd);padding:16px;background:var(--card);overflow:auto}
+aside{border-left:1px solid var(--bd);padding:16px;background:var(--card);overflow:auto;position:sticky;top:0;align-self:start;max-height:100vh}
 aside h2{margin:0 0 4px;font-size:1.1rem}
 .k{color:var(--mut);font-size:.82rem;margin-top:10px}
 .v{font-size:1.25rem;font-weight:600}
 .pos{color:var(--ac)}.neg{color:var(--bad)}
 pre{white-space:pre-wrap;word-break:break-word;font-size:.78rem;color:var(--mut);background:var(--bg);padding:8px;border-radius:8px;max-height:220px;overflow:auto}
 #clave{display:none;gap:8px;align-items:center}
-@media(max-width:820px){.wrap{grid-template-columns:1fr}aside{border-left:0;border-top:1px solid var(--bd)}}
+.b3{padding:12px 16px;border-bottom:1px solid var(--bd);background:var(--card)}
+.b3 h2{margin:0 0 8px;font-size:1rem}.b3 h2 span{color:var(--mut);font-weight:400;font-size:.85rem}
+.b3 .g{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.b3 .c{background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:8px 12px}
+.b3 .c .k{margin:0}.b3 .c .v{font-size:1.15rem}
+.b3 canvas{width:100%;height:130px;display:block;margin-top:10px;background:var(--bg);border:1px solid var(--bd);border-radius:10px}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.chip{font-size:.78rem;padding:2px 9px;border-radius:99px;background:var(--bg);border:1px solid var(--bd)}
+aside canvas{width:100%;height:150px;display:block;margin-top:8px;background:var(--bg);border:1px solid var(--bd);border-radius:10px}
+.estr{background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:8px 12px;font-size:.88rem;margin-top:8px}
+.tw{overflow-x:auto;margin-top:6px}table{border-collapse:collapse;width:100%;font-size:.78rem}
+th,td{text-align:right;padding:4px 6px;border-bottom:1px solid var(--bd);white-space:nowrap}th{color:var(--mut);font-weight:500}
+th:first-child,td:first-child{text-align:left}
+@media(max-width:820px){.wrap{grid-template-columns:1fr}aside{border-left:0;border-top:1px solid var(--bd);position:static;max-height:none}}
 </style>
 </head>
 <body>
@@ -36,6 +48,7 @@ pre{white-space:pre-wrap;word-break:break-word;font-size:.78rem;color:var(--mut)
   <button class="s" id="btnReal">Ver datos reales</button>
   <button class="s" id="btnDemo" style="display:none">Volver a demo</button>
 </header>
+<section class="b3" id="b3"></section>
 <div class="wrap">
   <div class="cv"><canvas id="lienzo"></canvas></div>
   <aside id="panel"><h2>Tocá un escritorio</h2><p class="k">Cada escritorio es un robot. La cara cambia con su resultado y la pantalla muestra su valor en el tiempo. Las otras salas son los demás roles del sistema.</p></aside>
@@ -57,7 +70,24 @@ function demo(){
     bots.push({id:'Bot '+i,nombre:'Robot '+i,valor:v,capital:cap,mercado:i%3?'alcista':'lateral',inicio:'2026-11-11'});
     series['Bot '+i]=arr;
   }
-  return {bots,series,extra:null,actualizado:'(demo)'};
+  const vivo={}, ini=new Date('2026-11-11T17:55:00-03:00'), hoy=new Date(), rr=rnd(33);
+  let v=1000,b=1000; vivo['Bot 3']=[];
+  for(let d=new Date(ini);d<=hoy;d=new Date(d.getTime()+864e5)){v*=1+0.012+(rr()-0.5)*0.01;b*=1-0.006+(rr()-0.5)*0.012;
+    vivo['Bot 3'].push({f:d.toISOString().slice(0,10),v,b})}
+  const b3=bots.find(x=>x.id==='Bot 3'); b3.valor=vivo['Bot 3'].slice(-1)[0].v; b3.inicio=ini.toISOString();
+  const pos=['BTC','ETH','BNB','SOL','XRP','DOGE','ADA','TRX','LINK','AVAX'].map(m=>({bot:'Bot 3',moneda:m,lado:'en corto',valor_usdt:'100.00'}));
+  const ops=[], hoyD=new Date();
+  pos.forEach(q=>ops.push({bot:'Bot 3',fecha:ini.toISOString(),moneda:q.moneda,lado:'abre corto',precio:String(100*(1+rr())),usdt:'99.95'}));
+  const MON=['BTC','ETH','BNB','SOL','XRP','DOGE','ADA','TRX','LINK','AVAX'];
+  bots.forEach((x,i)=>{
+    if(x.id==='Bot 3')return;
+    vivo[x.id]=series[x.id].map((val,k)=>({f:new Date(hoyD.getTime()-(39-k)*864e5).toISOString().slice(0,10),v:val,b:1000*(1-0.004*k)}));
+    const q=rnd(i*11+5), cant=2+Math.floor(q()*3);
+    for(let n=0;n<cant;n++){const m=MON[Math.floor(q()*MON.length)];
+      pos.push({bot:x.id,moneda:m,lado:q()>0.5?'comprado':'en corto',valor_usdt:String(180+q()*40)});
+      ops.push({bot:x.id,fecha:new Date(hoyD.getTime()-q()*8*864e5).toISOString(),moneda:m,lado:'compra',precio:String(10+q()*500),usdt:'200'})}
+  });
+  return {bots,series,vivo,pos,ops,extra:null,actualizado:'(demo)'};
 }
 function parseVivo(csv){
   const out={}; if(!csv)return out;
@@ -75,9 +105,18 @@ async function descifrar(clave){
   const plano = await crypto.subtle.decrypt({name:'AES-GCM',iv:b64(j.nonce)},key,b64(j.datos));
   return JSON.parse(new TextDecoder().decode(plano));
 }
+function parseCsv(csv){
+  if(!csv)return[]; const L=csv.trim().split(/\r?\n/); const h=L.shift().split(',');
+  return L.map(l=>{const c=l.split(',');const o={};h.forEach((k,i)=>o[k]=c[i]);return o});
+}
+function vivoCompleto(csv){
+  const out={}; for(const r of parseCsv(csv)){const v=parseFloat(r.valor),b=parseFloat(r.btc);
+    if(r.bot&&isFinite(v))(out[r.bot]=out[r.bot]||[]).push({f:r.fecha,v,b:isFinite(b)?b:null})}
+  return out;
+}
 function aDatos(x){
   const bots=(x.bots||[]).slice().sort((a,b)=>(parseInt((a.id||'').replace(/\D/g,''))||0)-(parseInt((b.id||'').replace(/\D/g,''))||0));
-  return {bots,series:parseVivo(x.vivo),extra:x,actualizado:x.actualizado};
+  return {bots,series:parseVivo(x.vivo),vivo:vivoCompleto(x.vivo),pos:parseCsv(x.posiciones),ops:parseCsv(x.operaciones),extra:x,actualizado:x.actualizado};
 }
 
 /* ===== Geometría isométrica ===== */
@@ -186,6 +225,7 @@ function persona(x,y,hue,t,fase,estado,etiqueta){
 function escritorio(d,t){
   const b=D.bots[d.i], ret=retorno(b), id=b.id;
   const hue=(d.i*47)%360, esSel=sel&&sel.tipo==='bot'&&sel.i===d.i, esHov=hover&&hover.tipo==='bot'&&hover.i===d.i;
+  if(b.id==='Bot 3'){const pu=0.5+0.5*Math.sin(t/400);poly(ctx,[iso(d.x-0.35,d.y-0.35),iso(d.x+DESKW+0.35,d.y-0.35),iso(d.x+DESKW+0.35,d.y+DESKD+1.35),iso(d.x-0.35,d.y+DESKD+1.35)],'rgba(255,214,90,'+(0.12+pu*0.1)+')','rgba(255,214,90,.8)')}
   box(ctx,d.x,d.y,DESKW,DESKD,0.72,0,[30,30,38]);
   // monitor
   box(ctx,d.x+0.45,d.y+0.12,1.0,0.07,0.62,0.72,[210,10,18]);
@@ -205,7 +245,7 @@ function escritorio(d,t){
   persona(d.x+DESKW/2,d.y+DESKD+0.55,hue,t,d.i,estado,{txt:(ret>=0?'+':'')+ret.toFixed(1)+'%',col:ret>=0?'#7bd88f':'#f0806b'});
   // nombre
   const nb=iso(d.x+DESKW/2,d.y+DESKD+0.1,0.0);
-  ctx.font='600 11px system-ui';ctx.textAlign='center';ctx.fillStyle='rgba(255,255,255,.85)';ctx.fillText(id,nb[0]+14,nb[1]+22);ctx.textAlign='left';
+  ctx.font='600 11px system-ui';ctx.textAlign='center';ctx.fillStyle='rgba(255,255,255,.85)';ctx.fillText(b.id==='Bot 3'?'★ '+id:id,nb[0]+14,nb[1]+22);ctx.textAlign='left';
   // zona clickeable
   const P=[iso(d.x,d.y,1.4),iso(d.x+DESKW,d.y,1.4),iso(d.x+DESKW,d.y+DESKD+1.1,0),iso(d.x,d.y+DESKD+1.1,0),iso(d.x,d.y,0),iso(d.x+DESKW,d.y,0),iso(d.x+DESKW,d.y+DESKD+1.1,1.2),iso(d.x,d.y+DESKD+1.1,1.2)];
   const px_=P.map(q=>q[0]),py_=P.map(q=>q[1]);
@@ -257,17 +297,8 @@ cv.addEventListener('click',e=>{sel=buscar(e);mostrar(sel)});
 function extra(obj){try{return '<pre>'+esc(JSON.stringify(obj,null,1).slice(0,2500))+'</pre>'}catch(e){return ''}}
 function mostrar(h){
   if(!h){return}
-  if(h.tipo==='bot'){
-    const b=D.bots[h.i],ret=retorno(b);
-    const ab=D.extra&&Array.isArray(D.extra.abiertas)?D.extra.abiertas.filter(a=>a&&(a.bot===b.id||a.robot===b.id)):null;
-    panel.innerHTML=`<h2>${esc(b.id)}</h2><div class="k">${esc(b.nombre||'')}</div>
-      <div class="k">Valor</div><div class="v">${b.valor.toFixed(2)} USDT</div>
-      <div class="k">Resultado sobre ${b.capital} de capital</div><div class="v ${ret>=0?'pos':'neg'}">${ret>=0?'+':''}${ret.toFixed(2)}%</div>
-      <div class="k">Mercado</div><div>${esc(b.mercado||'-')}</div>
-      <div class="k">Desde</div><div>${esc(b.inicio||'-')}</div>
-      ${b.ultimo_cambio?`<div class="k">Último cambio</div><div>${esc(b.ultimo_cambio)}</div>`:''}
-      ${ab?`<div class="k">Posiciones abiertas</div><div>${ab.length}</div>`:''}`;
-  } else if(h.tipo==='noticias'){
+  if(h.tipo==='bot'){ panelBot(h.i); return }
+  if(h.tipo==='noticias'){
     panel.innerHTML=`<h2>Noticias y análisis</h2><p class="k">Acá trabaja el robot que lee noticias y aprende de sus operaciones (memoria y lecciones).</p>`+(real&&D.extra?extra(D.extra.memoria):'<p class="k">Conectá con datos reales para ver las lecciones.</p>');
   } else if(h.tipo==='riesgo'){
     panel.innerHTML=`<h2>Guardián de riesgo</h2><p class="k">Vigila los límites: pérdida diaria máxima, tamaño máximo por posición, stop obligatorio, pausa tras perder. El botón rojo es el freno de emergencia (kill switch). Las reglas están en <code>reglas.json</code>.</p>`;
@@ -277,10 +308,99 @@ function mostrar(h){
   }
 }
 
+
+const EST = {
+ 1:'Compra las 5 criptomonedas con más fuerza de los últimos 20 días (todas largas) y solo si el mercado está alcista (Bitcoin sobre su media de 100 días). Si no, se queda en efectivo (USDT). Ajusta todos los días.',
+ 2:'Reparte 100 USDT en cada una de las 10 criptos grandes que estén sobre su media de 50 días, y solo si Bitcoin está alcista (sobre su media de 100 días). No hace cortos.',
+ 3:'Compara la media de 20 días con la de 50 en cada una de las 10 criptos grandes: si la de 20 está arriba va comprado (largo); si está abajo, en corto. 100 USDT por moneda, siempre invertido en las 10.',
+ 4:'Opera solo Bitcoin según la fase del ciclo del halving: comprado antes del halving y en la subida, en corto en la bajada, y afuera en las demás fases.',
+ 5:'Lee las noticias de las últimas 6 horas y les da puntaje (tono × importancia). Abre largo o corto cuando el puntaje llega a ±3 y el precio lo confirma. Máximo 3 posiciones, stop de 4 %, objetivo de 8 %, sale a las 24 h o si las noticias se dan vuelta.',
+ 6:'Estrategia de las "tortugas" (rupturas de máximos y mínimos) en las 10 criptos grandes, con filtro de Bitcoin. Pesos diarios, comprado o en efectivo.',
+ 7:'Elige las 3 criptos con mejor momentum de los últimos 30 días y las compra. Pesos diarios, comprado o en efectivo.',
+ 8:'Estrategia de las "tortugas" (rupturas de máximos y mínimos) en las 10 criptos grandes. Pesos diarios, comprado o en efectivo.',
+ 9:'Bitcoin con volatilidad objetivo: invierte más cuando el mercado está tranquilo y menos cuando se agita.',
+ 10:'Bitcoin con el RSI de 2 días de Connors: compra caídas cortas y sale con el rebote.',
+ 11:'Bitcoin con tortugas 20/10: compra la ruptura del máximo de 20 días y sale con el mínimo de 10.',
+ 12:'Bitcoin con la media de 200 días: comprado si el precio está arriba, en efectivo si está abajo.',
+ 13:'Rotación entre Ethereum y Bitcoin: se queda con el que viene más fuerte.',
+ 14:'Bitcoin con máximo y mínimo de 10 días: compra al romper el máximo y sale al romper el mínimo.',
+ 15:'Bitcoin con MACD: compra cuando el cruce de medias da señal alcista y sale cuando se da vuelta.'};
+function panelBot(i){
+  const b=D.bots[i], ret=retorno(b), gan=b.valor-b.capital, cls=gan>=0?'pos':'neg';
+  const n=parseInt((b.id||'').replace(/\D/g,''))||0, ini=new Date(b.inicio), ok=!isNaN(ini);
+  const m=(b.nombre||'').match(/\((.*)\)/), nom=m?m[1]:(b.nombre||'');
+  const pos=(D.pos||[]).filter(p=>p.bot===b.id), ops=(D.ops||[]).filter(o=>o.bot===b.id);
+  const filas=pos.map(p=>{
+    if(p.moneda==='USDT'||p.lado==='efectivo')return `<tr><td>USDT</td><td>efectivo</td><td>-</td><td>-</td><td>-</td><td>${usd(parseFloat(p.valor_usdt))}</td><td>-</td></tr>`;
+    const o=ops.find(x=>(x.moneda||'').replace('USDT','')===p.moneda&&!/^(cierra|vende)/.test(x.lado||''));
+    const val=parseFloat(p.valor_usdt), asig=o?parseFloat(o.usdt):NaN, r=isFinite(asig)&&asig>0?(val/asig-1)*100:null;
+    const f=o?new Date(o.fecha):null;
+    return `<tr><td><b>${esc(p.moneda)}</b></td><td>${esc(p.lado)}</td><td>${f&&!isNaN(f)?f.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'})+' '+f.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false}):'-'}</td><td>${o&&o.precio?fmtP(o.precio):'-'}</td><td>${isFinite(asig)?usd(asig):'-'}</td><td>${usd(val)}</td><td class="${r==null?'':r>=0?'pos':'neg'}">${r==null?'-':sg(r)+'%'}</td></tr>`}).join('');
+  panel.innerHTML=`<h2>${b.id==='Bot 3'?'⭐ ':''}${esc(b.id)}</h2><div class="k">${esc(nom)}</div>
+   <div class="estr"><b>Estrategia.</b> ${esc(EST[n]||'Sin descripción cargada para este robot.')}</div>
+   <div class="estr"><b>Palanca:</b> 1x. Es una simulación sin apalancar (con comisión y deslizamiento).${b.id==='Bot 3'?' Si lo copiás con la app, ahí elegís la palanca.':''}</div>
+   <div class="k">Capital inicial</div><div class="v">${usd(b.capital)} USDT</div>
+   <div class="k">Entró (empezó)</div><div>${ok?fmtF(ini):'-'}</div>
+   <div class="k">Valor hoy</div><div class="v">${usd(b.valor)} USDT</div>
+   <div class="k">Ganancia a hoy</div><div class="v ${cls}">${sg(gan)} USDT (${sg(ret)}%)</div>
+   ${b.mercado&&b.mercado!=='-'?`<div class="k">Mercado que ve</div><div>${esc(b.mercado)}</div>`:''}
+   ${b.ultimo_cambio?`<div class="k">Último cambio</div><div>${esc(b.ultimo_cambio)}</div>`:''}
+   <div class="k">Cómo va (vs Bitcoin con el mismo capital)</div><canvas id="pc"></canvas>
+   <div class="k">Activos que tiene ahora</div>
+   ${filas?`<div class="tw"><table><tr><th>Activo</th><th>Lado</th><th>Entró</th><th>Precio</th><th>Asignado</th><th>Valor</th><th>%</th></tr>${filas}</table></div>`:'<div>Ninguno (todo en efectivo).</div>'}`;
+  graficoB3(b,ini,(D.vivo&&D.vivo[b.id])||[],$('pc'),150,b.id);
+}
+
 /* ===== Conexión ===== */
 const $=id=>document.getElementById(id);
 function setModo(r,txt){real=r;$('estado').textContent=txt;$('estado').className=r?'real':'';$('btnReal').style.display=r?'none':'';$('btnDemo').style.display=r?'':'none';$('clave').style.display='none'}
-function cargar(d){D=d;armarLayout();ajustar();sel=null;hover=null}
+const fmtF=d=>d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'})+' '+d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false});
+const fmtP=x=>{const n=parseFloat(x);return !isFinite(n)?'-':n>=100?n.toFixed(2):n>=1?n.toFixed(3):n.toPrecision(4)};
+const usd=n=>n.toLocaleString('es-AR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const sg=n=>(n>=0?'+':'')+usd(n);
+function renderB3(){
+  const el=$('b3'), i=D.bots.findIndex(b=>b.id==='Bot 3');
+  if(i<0){el.innerHTML='';return}
+  const b=D.bots[i], ini=new Date(b.inicio), ahora=new Date();
+  const ok=!isNaN(ini), dias=ok?(ahora-ini)/864e5:0;
+  const gan=b.valor-b.capital, pct=gan/b.capital*100;
+  const v=(D.vivo&&D.vivo['Bot 3'])||[], ult=v.length?v[v.length-1]:null;
+  const btcPct=ult&&ult.b!=null?(ult.b/b.capital-1)*100:null;
+  const pos=(D.pos||[]).filter(p=>p.bot==='Bot 3');
+  const cls=gan>=0?'pos':'neg';
+  el.innerHTML=`<h2>⭐ Bot 3 <span>${real?'datos reales':'DEMO'} · ${real?'actualizado '+esc(D.actualizado||''):'datos inventados'}</span></h2>
+  <div class="g">
+   <div class="c"><div class="k">Empezó el</div><div class="v">${ok?fmtF(ini):'-'}</div></div>
+   <div class="c"><div class="k">Días corriendo</div><div class="v">${ok?dias.toFixed(1).replace('.',','):'-'}</div></div>
+   <div class="c"><div class="k">Capital inicial</div><div class="v">${usd(b.capital)}</div></div>
+   <div class="c"><div class="k">Valor hoy</div><div class="v">${usd(b.valor)}</div></div>
+   <div class="c"><div class="k">Ganancia a hoy</div><div class="v ${cls}">${sg(gan)} USDT</div></div>
+   <div class="c"><div class="k">Resultado</div><div class="v ${cls}">${sg(pct)}%</div></div>
+   ${btcPct!=null?`<div class="c"><div class="k">Bitcoin con lo mismo</div><div class="v ${btcPct>=0?'pos':'neg'}">${sg(btcPct)}%</div></div>`:''}
+  </div>
+  <canvas id="b3c"></canvas>
+  ${pos.length?`<div class="chips">${pos.map(p=>`<span class="chip">${esc(p.moneda)} · ${esc(p.lado)}${p.valor_usdt?' · '+usd(parseFloat(p.valor_usdt)):''}</span>`).join('')}</div>`:''}`;
+  graficoB3(b,ini,v);
+}
+function graficoB3(b,ini,v,cv2,H0,nom){
+  const c=cv2||$('b3c'); if(!c)return; const dpr=window.devicePixelRatio||1, W=c.clientWidth, H=H0||130;
+  c.width=W*dpr;c.height=H*dpr;const g=c.getContext('2d');g.setTransform(dpr,0,0,dpr,0,0);
+  if(v.length<1){g.fillStyle='#8b979f';g.font='13px system-ui';g.fillText('Todavía no hay historial diario',12,H/2);return}
+  const t0=isNaN(ini)?new Date(v[0].f+'T00:00:00').getTime():ini.getTime();
+  const A=[{t:t0,v:b.capital,b:b.capital}].concat(v.map(p=>({t:new Date(p.f+'T12:00:00').getTime(),v:p.v,b:p.b})));
+  A.push({t:Date.now(),v:b.valor,b:null});
+  const vals=A.flatMap(p=>[p.v,p.b]).filter(x=>x!=null), mn=Math.min(...vals,b.capital),mx=Math.max(...vals,b.capital),rg=(mx-mn)||1;
+  const t1=A[A.length-1].t, X=t=>40+(W-52)*(t-t0)/((t1-t0)||1), Y=x=>H-22-(H-38)*(x-mn)/rg;
+  g.strokeStyle='#2c353d';g.lineWidth=1;g.setLineDash([4,4]);g.beginPath();g.moveTo(40,Y(b.capital));g.lineTo(W-12,Y(b.capital));g.stroke();g.setLineDash([]);
+  g.fillStyle='#8b979f';g.font='11px system-ui';g.textAlign='right';g.fillText(Math.round(mx),36,Y(mx)+4);g.fillText(Math.round(mn),36,Y(mn)+4);g.textAlign='left';
+  const linea=(k,col)=>{g.beginPath();let on=false;A.forEach(p=>{if(p[k]==null)return;const x=X(p.t),y=Y(p[k]);on?g.lineTo(x,y):g.moveTo(x,y);on=true});g.strokeStyle=col;g.lineWidth=2;g.stroke()};
+  linea('b','#8b979f');linea('v','#7bd88f');
+  g.fillStyle='#8b979f';g.fillText('inicio '+new Date(t0).toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'}),40,H-6);
+  g.textAlign='right';g.fillText('hoy',W-12,H-6);g.textAlign='left';
+  g.fillStyle='#7bd88f';g.fillText('● '+(nom||'Bot 3'),W-150,14);g.fillStyle='#8b979f';g.fillText('● Bitcoin',W-80,14);
+}
+function cargar(d){D=d;armarLayout();ajustar();sel=null;hover=null;renderB3();
+  const i=D.bots.findIndex(b=>b.id==='Bot 3'); if(i>=0){sel={tipo:'bot',i};mostrar(sel)}}
 $('btnReal').onclick=()=>{$('clave').style.display='flex';$('pw').focus()};
 $('pw').onkeydown=e=>{if(e.key==='Enter')$('ok').click()};
 $('ok').onclick=async()=>{
@@ -290,7 +410,7 @@ $('ok').onclick=async()=>{
   $('ok').disabled=false;
 };
 $('btnDemo').onclick=()=>{cargar(demo());setModo(false,'DEMO · datos inventados')};
-window.addEventListener('resize',()=>{ajustar()});
+window.addEventListener('resize',()=>{ajustar();if(D)renderB3()});
 cargar(demo());
 requestAnimationFrame(frame);
 </script>
