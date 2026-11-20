@@ -37,6 +37,10 @@ aside canvas{width:100%;height:150px;display:block;margin-top:8px;background:var
 .tw{overflow-x:auto;margin-top:6px}table{border-collapse:collapse;width:100%;font-size:.78rem}
 th,td{text-align:right;padding:4px 6px;border-bottom:1px solid var(--bd);white-space:nowrap}th{color:var(--mut);font-weight:500}
 th:first-child,td:first-child{text-align:left}
+.mg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.mc{background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:6px 10px}.mc .k{margin:0;font-size:.74rem}.mc .w{font-size:1.05rem;font-weight:600}
+.les{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--bd);font-size:.82rem}.les span:last-child{text-align:right;white-space:nowrap}
+.sub{margin:14px 0 4px;font-weight:600;font-size:.9rem}.nota{color:var(--mut);font-size:.78rem;margin-top:6px}
 @media(max-width:820px){.wrap{grid-template-columns:1fr}aside{border-left:0;border-top:1px solid var(--bd);position:static;max-height:none}}
 </style>
 </head>
@@ -87,7 +91,25 @@ function demo(){
       pos.push({bot:x.id,moneda:m,lado:q()>0.5?'comprado':'en corto',valor_usdt:String(180+q()*40)});
       ops.push({bot:x.id,fecha:new Date(hoyD.getTime()-q()*8*864e5).toISOString(),moneda:m,lado:'compra',precio:String(10+q()*500),usdt:'200'})}
   });
-  return {bots,series,vivo,pos,ops,extra:null,actualizado:'(demo)'};
+  return {bots,series,vivo,pos,ops,extra:demoExtra(bots,pos),actualizado:'(demo)'};
+}
+function demoExtra(bots,pos){
+  const r=rnd(77), hoy=Date.now(), MON=['BTC','ETH','BNB','SOL','XRP','DOGE','ADA','TRX','LINK','AVAX'];
+  const iso=h=>new Date(hoy-h*36e5).toISOString();
+  const bit=[];
+  for(let k=0;k<14;k++){const bot=['Bot 3','Bot 4','Bot 5'][k%3],res=(r()-0.42)*9;
+    bit.push({bot,moneda:MON[Math.floor(r()*10)],lado:r()>0.5?'corto':'largo',entrada:iso(60+k*9),salida:iso(k*7+2),
+      invertido:300,resultado_usdt:+(300*res/100).toFixed(2),resultado_pct:+res.toFixed(2),motivo:['24 h','stop','objetivo','noticias en contra'][k%4],motivo_entrada:'noticias (demo)'})}
+  const ac=['Bot 3','Bot 4','Bot 5'].map((b,i)=>{const f=bit.filter(x=>x.bot===b),g=f.filter(x=>x.resultado_usdt>0);
+    return {bot:b,cerradas:f.length,ganadoras_pct:+(100*g.length/f.length).toFixed(1),ganancia_media_pct:3.1+i,perdida_media_pct:-2.4-i,
+      factor:+(1.2+i*0.4).toFixed(2),resultado_usdt:+f.reduce((a,x)=>a+x.resultado_usdt,0).toFixed(2),mejor_pct:7.5,peor_pct:-5.1,evitadas:3+i}});
+  const ab=pos.filter(q=>q.bot==='Bot 3'||q.bot==='Bot 5').map(q=>({bot:q.bot,moneda:q.moneda,lado:q.lado==='en corto'?'corto':'largo',desde:iso(40+r()*100),va_pct:+((r()-0.4)*8).toFixed(2),invertido:100}));
+  return {memoria:{operaciones:41,
+      lecciones:[{cuando:'con el mercado muy agitado (1,3× o más)',n:9,ganadoras_pct:33,media_pct:-1.8},{cuando:'en corto',n:14,ganadoras_pct:64,media_pct:0.9},
+                 {cuando:'con noticias muy fuertes (5 o más)',n:11,ganadoras_pct:73,media_pct:2.3},{cuando:'con BTC a favor en 24 h',n:17,ganadoras_pct:71,media_pct:1.6}],
+      evitadas:[{fecha:iso(30),moneda:'SOL',lado:'largo',precio:85,habria_pct:-3.2},{fecha:iso(52),moneda:'ETH',lado:'corto',precio:2100,habria_pct:1.4},
+                {fecha:iso(70),moneda:'DOGE',lado:'largo',precio:0.07,habria_pct:-4.8},{fecha:iso(5),moneda:'BNB',lado:'corto',precio:690}]},
+    aciertos:ac,bitacora:bit.sort((a,b)=>b.salida.localeCompare(a.salida)),abiertas:ab};
 }
 function parseVivo(csv){
   const out={}; if(!csv)return out;
@@ -298,16 +320,67 @@ function extra(obj){try{return '<pre>'+esc(JSON.stringify(obj,null,1).slice(0,25
 function mostrar(h){
   if(!h){return}
   if(h.tipo==='bot'){ panelBot(h.i); return }
-  if(h.tipo==='noticias'){
-    panel.innerHTML=`<h2>Noticias y análisis</h2><p class="k">Acá trabaja el robot que lee noticias y aprende de sus operaciones (memoria y lecciones).</p>`+(real&&D.extra?extra(D.extra.memoria):'<p class="k">Conectá con datos reales para ver las lecciones.</p>');
-  } else if(h.tipo==='riesgo'){
-    panel.innerHTML=`<h2>Guardián de riesgo</h2><p class="k">Vigila los límites: pérdida diaria máxima, tamaño máximo por posición, stop obligatorio, pausa tras perder. El botón rojo es el freno de emergencia (kill switch). Las reglas están en <code>reglas.json</code>.</p>`;
-  } else if(h.tipo==='comite'){
-    const ac=real&&D.extra?D.extra.aciertos:null;
-    panel.innerHTML=`<h2>Comité y bitácora</h2><p class="k">Donde se revisan las operaciones cerradas y los aciertos.</p>`+(ac?extra(ac):'<p class="k">Conectá con datos reales para ver los aciertos.</p>');
-  }
+  if(h.tipo==='noticias'){ panel.innerHTML=cardNoticias(); }
+  else if(h.tipo==='riesgo'){ panel.innerHTML=cardRiesgo(); }
+  else if(h.tipo==='comite'){ panel.innerHTML=cardComite(); }
 }
 
+const cl=n=>n>=0?'pos':'neg';
+const fCorta=f=>{const d=new Date(f);return isNaN(d)?'-':d.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit'})+' '+d.toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit',hour12:false})};
+const mc=(k,v,c)=>`<div class="mc"><div class="k">${k}</div><div class="w ${c||''}">${v}</div></div>`;
+const aviso=()=>real?'':'<div class="nota">DEMO: datos de ejemplo. Con tus datos reales ves los verdaderos.</div>';
+const sinDatos=t=>`<h2>${t}</h2><p class="k">Todavía no hay datos para mostrar.</p>`;
+
+function cardNoticias(){
+  const x=D.extra; if(!x)return sinDatos('Noticias y análisis');
+  const m=x.memoria||{}, a5=(x.aciertos||[]).find(a=>a.bot==='Bot 5');
+  const lec=m.lecciones||[], ev=m.evitadas||[], evl=ev.filter(e=>e.habria_pct!=null), bien=evl.filter(e=>e.habria_pct<0).length;
+  const ab=(x.abiertas||[]).filter(a=>a.bot==='Bot 5');
+  return `<h2>Noticias y análisis</h2>
+  <div class="k">Acá trabaja el Bot 5: lee las noticias, abre operaciones y aprende de lo que le sale bien o mal.</div>
+  <div class="mg">${mc('Operaciones que recuerda',m.operaciones??0)}
+   ${a5?mc('Cerradas',a5.cerradas):''}
+   ${a5&&a5.ganadoras_pct!=null?mc('Ganadoras',a5.ganadoras_pct+'%',a5.ganadoras_pct>=50?'pos':'neg'):''}
+   ${a5?mc('Resultado',sg(a5.resultado_usdt)+' USDT',cl(a5.resultado_usdt)):''}</div>
+  <div class="sub">Qué aprendió</div>
+  ${lec.length?lec.map(l=>`<div class="les"><span>${esc(l.cuando)}</span><span><b class="${cl(l.media_pct)}">${sg(l.media_pct)}%</b> prom. · ${l.ganadoras_pct}% ganó · ${l.n} ops</span></div>`).join(''):'<div class="nota">Todavía no tiene suficientes operaciones para sacar conclusiones (necesita 3 o más por situación).</div>'}
+  <div class="sub">Operaciones que frenó (${ev.length})</div>
+  ${evl.length?`<div class="nota" style="margin:0 0 4px">De las ${evl.length} ya evaluadas a las 24 h, frenar evitó una pérdida en ${bien}.</div>`:''}
+  ${ev.slice(-6).reverse().map(e=>`<div class="les"><span>${fCorta(e.fecha)} · ${esc(e.moneda)} ${esc(e.lado)}</span><span>${e.habria_pct!=null?`habría dado <b class="${cl(e.habria_pct)}">${sg(e.habria_pct)}%</b>`:'se evalúa a las 24 h'}</span></div>`).join('')||'<div class="nota">Ninguna todavía.</div>'}
+  <div class="sub">Posiciones abiertas del Bot 5</div>
+  ${ab.length?ab.map(p=>`<div class="les"><span>${esc(p.moneda)} · ${esc(p.lado)} · desde ${fCorta(p.desde)}</span><span class="${cl(p.va_pct)}">${sg(p.va_pct)}%</span></div>`).join(''):'<div class="nota">No tiene posiciones abiertas.</div>'}
+  ${aviso()}`;
+}
+
+function cardRiesgo(){
+  const x=D.extra, ab=x&&x.abiertas?x.abiertas:[];
+  const orden=ab.slice().sort((p,q)=>p.va_pct-q.va_pct), peor=orden[0], mejor=orden[orden.length-1];
+  const R=[['Pérdida diaria máxima','15 USDT'],['Pausa después de perder','60 min'],['Tamaño máximo por posición','300 USDT'],
+           ['Pérdida máxima por posición','5 %'],['Palanca máxima','10x'],['Stop obligatorio','sí'],['No agrandar tras perder','sí'],
+           ['Avisar corto si subió en 24 h','30 %'],['Revisa cada','60 s']];
+  return `<h2>Guardián de riesgo</h2>
+  <div class="k">Vigila los límites del ejecutor (la parte que opera en Binance). El botón rojo es el freno de emergencia (kill switch).</div>
+  <div class="sub">Reglas configuradas</div>
+  <div class="mg">${R.map(r=>mc(r[0],r[1])).join('')}</div>
+  <div class="nota">Son los valores de <code>reglas.json</code> al 20/11/2026; si los cambiás ahí, hay que actualizar esta lista.</div>
+  <div class="sub">Posiciones abiertas de los robots ahora (${ab.length})</div>
+  ${ab.length?`<div class="mg">${mc('Peor ahora',esc(peor.bot)+' · '+esc(peor.moneda)+' '+sg(peor.va_pct)+'%',cl(peor.va_pct))}${mc('Mejor ahora',esc(mejor.bot)+' · '+esc(mejor.moneda)+' '+sg(mejor.va_pct)+'%',cl(mejor.va_pct))}</div>`:'<div class="nota">Ninguna posición abierta con largo/corto.</div>'}
+  ${aviso()}`;
+}
+
+function cardComite(){
+  const x=D.extra; if(!x)return sinDatos('Comité y bitácora');
+  const ac=(x.aciertos||[]).filter(a=>a.cerradas>0).sort((p,q)=>q.resultado_usdt-p.resultado_usdt), bit=(x.bitacora||[]).slice(0,10);
+  const sin=(x.aciertos||[]).filter(a=>!a.cerradas).map(a=>a.bot);
+  return `<h2>Comité y bitácora</h2>
+  <div class="k">Acá se revisan las operaciones cerradas: cuáles ganaron, cuáles perdieron y por qué.</div>
+  <div class="sub">Aciertos por robot</div>
+  ${ac.length?`<div class="tw"><table><tr><th>Robot</th><th>Cerradas</th><th>Ganó</th><th>Factor</th><th>Resultado</th></tr>${ac.map(a=>`<tr><td><b>${esc(a.bot)}</b></td><td>${a.cerradas}</td><td>${a.ganadoras_pct!=null?a.ganadoras_pct+'%':'-'}</td><td>${a.factor!=null?a.factor:'-'}</td><td class="${cl(a.resultado_usdt)}">${sg(a.resultado_usdt)}</td></tr>`).join('')}</table></div>
+  <div class="nota">Factor = lo que ganó por cada USDT que perdió (más de 1 es bueno).${sin.length?' Sin operaciones cerradas todavía: '+sin.map(esc).join(', ')+'.':''}</div>`:'<div class="nota">Todavía no hay operaciones cerradas.</div>'}
+  <div class="sub">Últimas cerradas</div>
+  ${bit.length?bit.map(o=>`<div class="les"><span>${fCorta(o.salida)} · <b>${esc(o.bot)}</b> ${esc(o.moneda)} ${esc(o.lado)}<br><span class="nota">${esc(o.motivo||'')}</span></span><span class="${cl(o.resultado_usdt)}">${sg(o.resultado_pct)}%<br><span class="nota">${sg(o.resultado_usdt)} USDT</span></span></div>`).join(''):'<div class="nota">Ninguna todavía.</div>'}
+  ${aviso()}`;
+}
 
 const EST = {
  1:'Compra las 5 criptomonedas con más fuerza de los últimos 20 días (todas largas) y solo si el mercado está alcista (Bitcoin sobre su media de 100 días). Si no, se queda en efectivo (USDT). Ajusta todos los días.',
