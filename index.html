@@ -415,7 +415,8 @@ const EST = {
  12:'Bitcoin con la media de 200 días: comprado si el precio está arriba, en efectivo si está abajo.',
  13:'Rotación entre Ethereum y Bitcoin: se queda con el que viene más fuerte.',
  14:'Bitcoin con máximo y mínimo de 10 días: compra al romper el máximo y sale al romper el mínimo.',
- 15:'Bitcoin con MACD: compra cuando el cruce de medias da señal alcista y sale cuando se da vuelta.'};
+ 15:'Bitcoin con MACD: compra cuando el cruce de medias da señal alcista y sale cuando se da vuelta.',
+ 16:'Corto en criptos recién listadas en Binance Futuros: entra entre 1 y 3 días después del listado (si mueve al menos 5 millones por día), con stop del 50 % y salida a los 14 días. Máximo 5 a la vez. Opera poco: hoy salen solo 2 o 3 listados por mes. Está en prueba, sin plata.'};
 function panelBot(i){
   const b=D.bots[i], ret=retorno(b), gan=b.valor-b.capital, cls=gan>=0?'pos':'neg';
   const n=parseInt((b.id||'').replace(/\D/g,''))||0, ini=new Date(b.inicio), ok=!isNaN(ini);
