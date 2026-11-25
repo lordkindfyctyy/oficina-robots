@@ -40,6 +40,7 @@ th:first-child,td:first-child{text-align:left}
 .mg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
 .mc{background:var(--bg);border:1px solid var(--bd);border-radius:10px;padding:6px 10px}.mc .k{margin:0;font-size:.74rem}.mc .w{font-size:1.05rem;font-weight:600}
 .les{display:flex;justify-content:space-between;gap:10px;padding:6px 0;border-bottom:1px solid var(--bd);font-size:.82rem}.les span:last-child{text-align:right;white-space:nowrap}
+.inf{background:rgba(255,255,255,.05);border-radius:8px;padding:8px 10px;margin:6px 0;font-size:.82rem;line-height:1.4}.inf.alerta{border-left:3px solid #e8a33a}
 .sub{margin:14px 0 4px;font-weight:600;font-size:.9rem}.nota{color:var(--mut);font-size:.78rem;margin-top:6px}
 @media(max-width:820px){.wrap{grid-template-columns:1fr}aside{border-left:0;border-top:1px solid var(--bd);position:static;max-height:none}}
 </style>
@@ -109,6 +110,12 @@ function demoExtra(bots,pos){
                  {cuando:'con noticias muy fuertes (5 o más)',n:11,ganadoras_pct:73,media_pct:2.3},{cuando:'con BTC a favor en 24 h',n:17,ganadoras_pct:71,media_pct:1.6}],
       evitadas:[{fecha:iso(30),moneda:'SOL',lado:'largo',precio:85,habria_pct:-3.2},{fecha:iso(52),moneda:'ETH',lado:'corto',precio:2100,habria_pct:1.4},
                 {fecha:iso(70),moneda:'DOGE',lado:'largo',precio:0.07,habria_pct:-4.8},{fecha:iso(5),moneda:'BNB',lado:'corto',precio:690}]},
+    agentes:{fuente:'reglas',aviso:'Informes de texto: los agentes no operan, no predicen precios ni dan recomendaciones. (DEMO)',
+      noticias:{texto:'Se leyeron 65 notas; 2 de impacto alto. La más fuerte (5 puntos): ejemplo de titular de la demo. El puntaje sale de palabras clave del título: ordena la lectura, no predice precios.',notas:[{titulo:'Titular de ejemplo (demo)',puntos:'5'},{titulo:'Otro titular de ejemplo (demo)',puntos:'4'}]},
+      zonas:[{nombre:'Zona 1 · Los fundadores',texto:'Promedio de la zona: +2,9%. Va mejor Bot 3 (+16,4%) y va peor Bot 5 (-1,8%). Esperando en efectivo, sin posiciones: Bot 1, Bot 2, Bot 4.'},
+             {nombre:'Zona 2 · Las 10 grandes',texto:'Los 5 robots están en +0,00% desde que arrancaron. Ninguno tiene posiciones abiertas: todos están esperando en efectivo (USDT).'},
+             {nombre:'Zona 3 · Bitcoin y ETH/BTC',texto:'Los 5 robots están en +0,00% desde que arrancaron. Ninguno tiene posiciones abiertas: todos están esperando en efectivo (USDT).'}],
+      comite:{texto:'2 operaciones cerradas en la bitácora y 11 abiertas ahora. De las últimas 2 cerradas, 0 dieron ganancia.'},alertas:['Bot 5 perdió -6,0% desde que arrancó. (ejemplo de alerta en la demo)']},
     aciertos:ac,bitacora:bit.sort((a,b)=>b.salida.localeCompare(a.salida)),abiertas:ab};
 }
 function parseVivo(csv){
@@ -331,13 +338,19 @@ const mc=(k,v,c)=>`<div class="mc"><div class="k">${k}</div><div class="w ${c||'
 const aviso=()=>real?'':'<div class="nota">DEMO: datos de ejemplo. Con tus datos reales ves los verdaderos.</div>';
 const sinDatos=t=>`<h2>${t}</h2><p class="k">Todavía no hay datos para mostrar.</p>`;
 
+const fuenteAg=a=>a.fuente==='claude'?'redactado por Claude':'informe automático por reglas';
+const informe=(quien,texto,a)=>`<div class="inf"><div class="k"><b>${quien}</b> · ${fuenteAg(a)}</div><div>${esc(texto)}</div></div>`;
 function cardNoticias(){
   const x=D.extra; if(!x)return sinDatos('Noticias y análisis');
   const m=x.memoria||{}, a5=(x.aciertos||[]).find(a=>a.bot==='Bot 5');
   const lec=m.lecciones||[], ev=m.evitadas||[], evl=ev.filter(e=>e.habria_pct!=null), bien=evl.filter(e=>e.habria_pct<0).length;
   const ab=(x.abiertas||[]).filter(a=>a.bot==='Bot 5');
+  const ag=x.agentes;
   return `<h2>Noticias y análisis</h2>
   <div class="k">Acá trabaja el Bot 5: lee las noticias, abre operaciones y aprende de lo que le sale bien o mal.</div>
+  ${ag?`<div class="sub">Informe del analista de noticias</div>${informe('Analista de noticias',ag.noticias.texto,ag)}
+  ${(ag.noticias.notas||[]).length?`<div class="nota" style="margin-top:8px">Notas más fuertes:</div>${ag.noticias.notas.map(n=>`<div class="les"><span>${esc(n.titulo)}</span><span class="nota">${esc(n.puntos)} pts</span></div>`).join('')}`:''}
+  <div class="nota">${esc(ag.aviso||'')}</div>`:''}
   <div class="mg">${mc('Operaciones que recuerda',m.operaciones??0)}
    ${a5?mc('Cerradas',a5.cerradas):''}
    ${a5&&a5.ganadoras_pct!=null?mc('Ganadoras',a5.ganadoras_pct+'%',a5.ganadoras_pct>=50?'pos':'neg'):''}
@@ -372,8 +385,13 @@ function cardComite(){
   const x=D.extra; if(!x)return sinDatos('Comité y bitácora');
   const ac=(x.aciertos||[]).filter(a=>a.cerradas>0).sort((p,q)=>q.resultado_usdt-p.resultado_usdt), bit=(x.bitacora||[]).slice(0,10);
   const sin=(x.aciertos||[]).filter(a=>!a.cerradas).map(a=>a.bot);
+  const ag=x.agentes;
   return `<h2>Comité y bitácora</h2>
   <div class="k">Acá se revisan las operaciones cerradas: cuáles ganaron, cuáles perdieron y por qué.</div>
+  ${ag?`<div class="sub">Informe del comité</div>${informe('Comité',ag.comite.texto,ag)}
+  <div class="sub">Alertas</div>${(ag.alertas||[]).length?ag.alertas.map(t=>`<div class="inf alerta">⚠ ${esc(t)}</div>`).join(''):'<div class="nota">Sin alertas: ningún robot se comporta raro.</div>'}
+  <div class="sub">Jefes de zona</div>${(ag.zonas||[]).map(z=>`<div class="inf"><div class="k"><b>${esc(z.nombre)}</b></div><div>${esc(z.texto)}</div></div>`).join('')}
+  <div class="nota">${esc(ag.aviso||'')}</div>`:''}
   <div class="sub">Aciertos por robot</div>
   ${ac.length?`<div class="tw"><table><tr><th>Robot</th><th>Cerradas</th><th>Ganó</th><th>Factor</th><th>Resultado</th></tr>${ac.map(a=>`<tr><td><b>${esc(a.bot)}</b></td><td>${a.cerradas}</td><td>${a.ganadoras_pct!=null?a.ganadoras_pct+'%':'-'}</td><td>${a.factor!=null?a.factor:'-'}</td><td class="${cl(a.resultado_usdt)}">${sg(a.resultado_usdt)}</td></tr>`).join('')}</table></div>
   <div class="nota">Factor = lo que ganó por cada USDT que perdió (más de 1 es bueno).${sin.length?' Sin operaciones cerradas todavía: '+sin.map(esc).join(', ')+'.':''}</div>`:'<div class="nota">Todavía no hay operaciones cerradas.</div>'}
